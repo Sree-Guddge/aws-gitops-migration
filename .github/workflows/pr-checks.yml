@@ -37,7 +37,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: ${{ env.TF_VERSION }}
+          terraform_version: 1.8.5
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive ./infra ./modules ./envs
@@ -59,7 +59,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: ${{ env.TF_VERSION }}
+          terraform_version: 1.8.5
 
       - name: Terraform Init (no backend)
         run: terraform init -backend=false
@@ -117,7 +117,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: ${{ env.TF_VERSION }}
+          terraform_version: 1.8.5
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4

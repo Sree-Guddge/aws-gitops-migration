@@ -152,14 +152,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
 # Terraform state bucket
 # ---------------------------------------------------------------------------
 
-# Import block: if the bucket was pre-created manually (scripts/bootstrap.md Step 2),
-# this import brings it under Terraform management instead of failing with
-# "BucketAlreadyOwnedByYou". Replace REPLACE_WITH_STATE_BUCKET_NAME with the
-# actual bucket name before running terraform init/plan.
-import {
-  to = aws_s3_bucket.state
-  id = var.state_bucket_name
-}
+# Import block removed for fresh deployment (no pre-existing bucket)
 
 resource "aws_s3_bucket" "state" {
   bucket        = var.state_bucket_name
@@ -228,12 +221,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "state" {
 # DynamoDB state lock table
 # ---------------------------------------------------------------------------
 
-# Import block: if the table was pre-created manually (scripts/bootstrap.md Step 3),
-# this import brings it under Terraform management.
-import {
-  to = aws_dynamodb_table.lock
-  id = var.dynamodb_table_name
-}
+# Import block removed for fresh deployment (no pre-existing table)
 
 resource "aws_dynamodb_table" "lock" {
   name         = var.dynamodb_table_name

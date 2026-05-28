@@ -79,9 +79,9 @@ resource "aws_iam_role_policy" "dev_state" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      { Effect = "Allow", Action = ["s3:GetObject","s3:PutObject","s3:DeleteObject","s3:ListBucket"], Resource = [local.state_bucket_arn, "${local.state_bucket_arn}/dev/*"] },
-      { Effect = "Allow", Action = ["dynamodb:GetItem","dynamodb:PutItem","dynamodb:DeleteItem"], Resource = [local.lock_table_arn] },
-      { Effect = "Allow", Action = ["kms:Decrypt","kms:GenerateDataKey","kms:DescribeKey"], Resource = [local.kms_key_arn] }
+      { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"], Resource = [local.state_bucket_arn, "${local.state_bucket_arn}/dev/*"] },
+      { Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"], Resource = [local.lock_table_arn] },
+      { Effect = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"], Resource = [local.kms_key_arn] }
     ]
   })
 }
@@ -92,9 +92,9 @@ resource "aws_iam_role_policy" "staging_state" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      { Effect = "Allow", Action = ["s3:GetObject","s3:PutObject","s3:DeleteObject","s3:ListBucket"], Resource = [local.state_bucket_arn, "${local.state_bucket_arn}/staging/*"] },
-      { Effect = "Allow", Action = ["dynamodb:GetItem","dynamodb:PutItem","dynamodb:DeleteItem"], Resource = [local.lock_table_arn] },
-      { Effect = "Allow", Action = ["kms:Decrypt","kms:GenerateDataKey","kms:DescribeKey"], Resource = [local.kms_key_arn] }
+      { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"], Resource = [local.state_bucket_arn, "${local.state_bucket_arn}/staging/*"] },
+      { Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"], Resource = [local.lock_table_arn] },
+      { Effect = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"], Resource = [local.kms_key_arn] }
     ]
   })
 }
@@ -105,9 +105,9 @@ resource "aws_iam_role_policy" "prod_state" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      { Effect = "Allow", Action = ["s3:GetObject","s3:PutObject","s3:DeleteObject","s3:ListBucket"], Resource = [local.state_bucket_arn, "${local.state_bucket_arn}/prod/*"] },
-      { Effect = "Allow", Action = ["dynamodb:GetItem","dynamodb:PutItem","dynamodb:DeleteItem"], Resource = [local.lock_table_arn] },
-      { Effect = "Allow", Action = ["kms:Decrypt","kms:GenerateDataKey","kms:DescribeKey"], Resource = [local.kms_key_arn] }
+      { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"], Resource = [local.state_bucket_arn, "${local.state_bucket_arn}/prod/*"] },
+      { Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"], Resource = [local.lock_table_arn] },
+      { Effect = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"], Resource = [local.kms_key_arn] }
     ]
   })
 }

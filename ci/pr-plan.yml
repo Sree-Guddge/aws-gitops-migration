@@ -1,0 +1,316 @@
+﻿# ci/pr-plan.yml
+# Runs on every PR targeting main.
+# Performs: fmt check, validate, security scan, secret scan, plan (with artifact upload),
+# destructive-change detection, and PR comment summary.
+# No AWS credentials are stored -- OIDC is used to assume the deploy role.
+
+name: "Terraform PR Checks"
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - "modules/**"
+      - "envs/**"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  TF_VERSION: "1.8.5"
+  AWS_REGION: "us-west-2"
+
+jobs:
+  # -----------------------------------------------------------
+  # Job: fmt - Check Terraform formatting across all directories
+  # -----------------------------------------------------------
+  fmt:
+    name: Terraform Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive ./infra ./modules ./envs
+
+  # -----------------------------------------------------------
+  # Job: validate - Per-environment Terraform validation
+  # -----------------------------------------------------------
+  validate:
+    name: Terraform Validate (${{ matrix.env }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, staging, prod]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init (no backend)
+        run: terraform init -backend=false
+        working-directory: envs/${{ matrix.env }}
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: envs/${{ matrix.env }}
+
+  # -----------------------------------------------------------
+  # Job: security-scan - Run tfsec to detect misconfigurations
+  # -----------------------------------------------------------
+  security-scan:
+    name: Security Scan (tfsec)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        id: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: false
+          additional_args: --minimum-severity HIGH
+
+      - name: Save scan results
+        if: always()
+        run: |
+          tfsec . --format json --minimum-severity HIGH > tfsec-results.json 2>/dev/null || true
+        continue-on-error: true
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfsec-results
+          path: tfsec-results.json
+          retention-days: 7
+
+  # -----------------------------------------------------------
+  # Job: secret-scan - Detect committed credentials/secrets
+  # -----------------------------------------------------------
+  secret-scan:
+    name: Secret Scanning (TruffleHog)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install TruffleHog
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Run TruffleHog filesystem scan
+        run: |
+          trufflehog filesystem . --no-update --fail --json > trufflehog-results.json 2>&1 || {
+            echo "::error::Secrets detected in repository! Review trufflehog-results.json for details."
+            cat trufflehog-results.json
+            exit 1
+          }
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trufflehog-results
+          path: trufflehog-results.json
+          retention-days: 7
+
+  # -----------------------------------------------------------
+  # Job: plan - Per-environment Terraform plan with OIDC auth
+  # -----------------------------------------------------------
+  plan:
+    name: Terraform Plan (${{ matrix.env }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, staging, prod]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[format('AWS_DEPLOY_ROLE_{0}', upper(matrix.env))] }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: "github-pr-plan-${{ matrix.env }}"
+
+      - name: Terraform Init (with backend)
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="kms_key_id=${{ secrets.TF_STATE_KMS_KEY_ARN }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}"
+        working-directory: envs/${{ matrix.env }}
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var-file=terraform.tfvars \
+            -out=tfplan-${{ matrix.env }}.binary \
+            -no-color 2>&1 | tee plan-output.txt
+        working-directory: envs/${{ matrix.env }}
+
+      - name: Upload Plan Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ matrix.env }}
+          path: |
+            envs/${{ matrix.env }}/tfplan-${{ matrix.env }}.binary
+            envs/${{ matrix.env }}/plan-output.txt
+          retention-days: 7
+
+  # -----------------------------------------------------------
+  # Job: destructive-check - Fail if plan contains destroy/replace
+  #   unless PR has the 'override-destructive' label
+  # -----------------------------------------------------------
+  destructive-check:
+    name: Destructive Change Check (${{ matrix.env }})
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, staging, prod]
+    steps:
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ matrix.env }}
+
+      - name: Check for destructive changes
+        id: check-destructive
+        run: |
+          if grep -qE '# will be destroyed|# must be replaced' plan-output.txt; then
+            echo "destructive=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Destructive changes detected in ${{ matrix.env }} plan"
+          else
+            echo "destructive=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail if destructive without override label
+        if: steps.check-destructive.outputs.destructive == 'true' && !contains(github.event.pull_request.labels.*.name, 'override-destructive')
+        run: |
+          echo "::error::Destructive changes detected in ${{ matrix.env }} plan. Add the 'override-destructive' label to proceed."
+          exit 1
+
+  # -----------------------------------------------------------
+  # Job: comment - Post plan output and security scan summary to PR
+  # -----------------------------------------------------------
+  comment:
+    name: Post PR Comment
+    needs: [plan, security-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Plan Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Post Plan and Scan Summary to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            let body = '## Terraform PR Checks Summary\n\n';
+
+            // Collect plan outputs for each environment
+            const envs = ['dev', 'staging', 'prod'];
+            for (const env of envs) {
+              const planPath = path.join('artifacts', `tfplan-${env}`, 'plan-output.txt');
+              if (fs.existsSync(planPath)) {
+                const output = fs.readFileSync(planPath, 'utf8');
+                const truncated = output.length > 15000
+                  ? output.slice(0, 15000) + '\n...[truncated]'
+                  : output;
+                body += `### Plan: \`${env}\`\n`;
+                body += '<details>\n<summary>Click to expand</summary>\n\n';
+                body += '```hcl\n' + truncated + '\n```\n';
+                body += '</details>\n\n';
+              }
+            }
+
+            // Append security scan summary
+            const scanPath = path.join('artifacts', 'tfsec-results', 'tfsec-results.json');
+            if (fs.existsSync(scanPath)) {
+              try {
+                const scanRaw = fs.readFileSync(scanPath, 'utf8');
+                const scanData = JSON.parse(scanRaw);
+                const results = scanData.results || [];
+                const highCritical = results.filter(r =>
+                  r.severity === 'HIGH' || r.severity === 'CRITICAL'
+                );
+                body += '### Security Scan (tfsec)\n\n';
+                if (highCritical.length === 0) {
+                  body += ':white_check_mark: No HIGH or CRITICAL findings.\n\n';
+                } else {
+                  body += `:warning: **${highCritical.length} HIGH/CRITICAL finding(s)**\n\n`;
+                  body += '| Severity | Rule | Description | Location |\n';
+                  body += '|----------|------|-------------|----------|\n';
+                  for (const r of highCritical.slice(0, 20)) {
+                    body += `| ${r.severity} | ${r.rule_id || ''} | ${r.description || ''} | ${r.location?.filename || ''}:${r.location?.start_line || ''} |\n`;
+                  }
+                  body += '\n';
+                }
+              } catch (e) {
+                body += '### Security Scan (tfsec)\n\n';
+                body += ':information_source: Scan results could not be parsed.\n\n';
+              }
+            } else {
+              body += '### Security Scan (tfsec)\n\n';
+              body += ':information_source: No scan results available.\n\n';
+            }
+
+            // Post or update comment
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const marker = '## Terraform PR Checks Summary';
+            const existing = comments.find(c => c.body.startsWith(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                comment_id: existing.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }

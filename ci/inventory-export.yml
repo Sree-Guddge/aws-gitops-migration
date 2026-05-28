@@ -1,0 +1,46 @@
+# ci/inventory-export.yml
+# Scheduled weekly inventory export of all AWS resources.
+# Output is committed to the repo under scripts/inventory/ for audit trail.
+
+name: "AWS Inventory Export"
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC
+  workflow_dispatch:       # Allow manual trigger
+
+permissions:
+  id-token: write
+  contents: write
+
+env:
+  AWS_REGION: "us-west-2"
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev, staging, prod]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[format('AWS_DEPLOY_ROLE_{0}', upper(matrix.env))] }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: "github-inventory-${{ matrix.env }}"
+
+      - name: Run Inventory Export
+        run: bash scripts/inventory_export.sh ${{ matrix.env }}
+
+      - name: Commit Inventory
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/inventory/
+          git diff --staged --quiet || git commit -m "chore: update inventory export [${{ matrix.env }}] $(date -u +%Y-%m-%d)"
+          git push

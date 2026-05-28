@@ -1,0 +1,29 @@
+﻿# CODEOWNERS - AWS GitOps Migration Repository
+#
+# This file defines code ownership for automated review assignment.
+# GitHub will automatically request reviews from the listed teams/users
+# when a pull request modifies files matching the patterns below.
+#
+# Order matters: later rules override earlier ones for the same file.
+
+# Default: platform team owns everything
+* @platform-team
+
+# Production environment - requires platform team review
+infra/environments/prod/ @platform-team
+envs/prod/ @platform-team
+
+# Bootstrap infrastructure - requires both platform and security review
+infra/bootstrap/ @platform-team @security-team
+
+# IAM module - security-sensitive, requires security team review
+modules/iam/ @security-team
+
+# KMS module - encryption keys, requires security team review
+modules/kms/ @security-team
+
+# GitHub Actions workflows - CI/CD pipeline changes require platform team review
+.github/workflows/ @platform-team
+
+# CI directory (legacy workflow location)
+ci/ @platform-team

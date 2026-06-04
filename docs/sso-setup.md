@@ -1,4 +1,4 @@
-﻿# Entra ID SSO + SCIM Configuration Guide
+# Entra ID SSO + SCIM Configuration Guide
 
 ## Overview
 
@@ -97,12 +97,24 @@ Ensure the following Entra ID attributes map to SCIM:
 
 ---
 
-## Part 3 -- Permission Set to Group Mapping
+## Part 3 -- Permission Set to Group Mapping (Terraform)
 
-After SCIM sync, note the Identity Store Group IDs and update envs/prod/terraform.tfvars:
+Permission sets and group-to-account assignments are managed by the deployable
+`infra/sso/` Terraform root (which wraps `modules/sso`). The five permission sets
+(AdministratorAccess, PowerUserAccess, ReadOnly, Billing, Developer, RegionalAdmin) are created from the module default.
 
+After SCIM sync, get the Identity Store Group IDs:
+```bash
+aws identitystore list-groups \
+  --identity-store-id d-XXXXXXXXXX \
+  --query "Groups[*].{GroupId:GroupId,DisplayName:DisplayName}" \
+  --output table
+```
+
+Copy `infra/sso/terraform.tfvars.example` to `infra/sso/terraform.tfvars` and fill in
+the synced group IDs:
 ```hcl
-sso_account_assignments = [
+account_assignments = [
   {
     group_id       = "IDENTITY_STORE_GROUP_ID_FOR_aws-admins"
     account_id     = "PROD_ACCOUNT_ID"
@@ -117,12 +129,18 @@ sso_account_assignments = [
 ]
 ```
 
-Get Identity Store Group IDs:
+Then apply (from the management account where IAM Identity Center is enabled):
 ```bash
-aws identitystore list-groups \
-  --identity-store-id d-XXXXXXXXXX \
-  --query "Groups[*].{GroupId:GroupId,DisplayName:DisplayName}" \
-  --output table
+cd infra/sso
+terraform init
+terraform plan
+terraform apply
+```
+
+Validate the result with the prod smoke test, which checks that all five permission
+sets exist:
+```bash
+bash tests/smoke_prod.sh
 ```
 
 ---

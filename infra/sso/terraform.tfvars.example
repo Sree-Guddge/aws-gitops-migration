@@ -1,0 +1,24 @@
+# infra/sso/terraform.tfvars.example
+# Copy to terraform.tfvars and fill in real values after SCIM sync.
+#
+# Get Identity Store group IDs with:
+#   aws identitystore list-groups --identity-store-id <d-XXXXXXXXXX> \
+#     --query "Groups[*].{GroupId:GroupId,DisplayName:DisplayName}" --output table
+
+# account_assignments = [
+#   {
+#     group_id       = "GROUP_ID_FOR_aws-admins"      # from SCIM-synced Entra group
+#     account_id     = "111111111111"                 # target AWS account
+#     permission_set = "AdministratorAccess"
+#   },
+#   {
+#     group_id       = "GROUP_ID_FOR_aws-developers"
+#     account_id     = "111111111111"
+#     permission_set = "Developer"
+#   },
+#   {
+#     group_id       = "GROUP_ID_FOR_aws-readonly"
+#     account_id     = "222222222222"
+#     permission_set = "ReadOnly"
+#   },
+# ]

@@ -39,3 +39,26 @@ variable "account_assignments" {
     error_message = "account_id must be a 12-digit AWS account ID."
   }
 }
+variable "managed_groups" {
+  description = "AWS-managed Identity Store groups: group display name -> list of usernames (e.g. \"user@guddge.com\"). Needed because Entra only provisions users, not groups."
+  type        = map(list(string))
+  default     = {}
+}
+
+variable "managed_group_assignments" {
+  description = "Assignments mapping an AWS-managed group (display name) to an account + permission set."
+  type = list(object({
+    group_name     = string
+    account_id     = string
+    permission_set = string
+  }))
+  default = []
+
+  validation {
+    condition = alltrue([
+      for a in var.managed_group_assignments :
+      contains(["AdministratorAccess", "PowerUserAccess", "ReadOnly", "Billing", "Developer", "RegionalAdmin"], a.permission_set)
+    ])
+    error_message = "permission_set must be one of: AdministratorAccess, PowerUserAccess, ReadOnly, Billing, Developer, RegionalAdmin."
+  }
+}

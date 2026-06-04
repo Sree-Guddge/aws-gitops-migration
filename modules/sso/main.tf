@@ -67,3 +67,75 @@ resource "aws_ssoadmin_account_assignment" "this" {
   target_id          = each.value.account_id
   target_type        = "AWS_ACCOUNT"
 }
+
+# ---------------------------------------------------------------------------
+# AWS-managed Identity Store groups + memberships.
+#
+# Used when the external IdP (Entra) can only provision USERS, not groups.
+# We create the aws-* groups directly in the Identity Store and add the
+# SCIM-synced users to them. Group-based account assignments then work normally.
+#
+# var.managed_groups maps a group display name to the list of usernames
+# (as they appear in the Identity Store, e.g. "sreevatsav@guddge.com").
+# ---------------------------------------------------------------------------
+
+resource "aws_identitystore_group" "managed" {
+  for_each = var.managed_groups
+
+  identity_store_id = local.identity_store_id
+  display_name      = each.key
+  description       = "Managed by Terraform (modules/sso). Members assigned to AWS permission sets."
+}
+
+# Flatten group -> user pairs for membership
+locals {
+  group_memberships = merge([
+    for group_name, usernames in var.managed_groups : {
+      for username in usernames :
+      "${group_name}::${username}" => {
+        group_name = group_name
+        username   = username
+      }
+    }
+  ]...)
+}
+
+# Look up each referenced user by username (UserName is unique in the store)
+data "aws_identitystore_user" "members" {
+  for_each = toset([
+    for pair in values(local.group_memberships) : pair.username
+  ])
+
+  identity_store_id = local.identity_store_id
+
+  alternate_identifier {
+    unique_attribute {
+      attribute_path  = "UserName"
+      attribute_value = each.value
+    }
+  }
+}
+
+resource "aws_identitystore_group_membership" "managed" {
+  for_each = local.group_memberships
+
+  identity_store_id = local.identity_store_id
+  group_id          = aws_identitystore_group.managed[each.value.group_name].group_id
+  member_id         = data.aws_identitystore_user.members[each.value.username].user_id
+}
+
+# Account assignments for AWS-managed groups (resolves group_id from the
+# group created above, so callers reference the group by display name).
+resource "aws_ssoadmin_account_assignment" "managed_group" {
+  for_each = {
+    for a in var.managed_group_assignments :
+    "${a.group_name}::${a.account_id}::${a.permission_set}" => a
+  }
+
+  instance_arn       = local.instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.this[each.value.permission_set].arn
+  principal_id       = aws_identitystore_group.managed[each.value.group_name].group_id
+  principal_type     = "GROUP"
+  target_id          = each.value.account_id
+  target_type        = "AWS_ACCOUNT"
+}

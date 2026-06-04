@@ -97,74 +97,77 @@ Ensure the following Entra ID attributes map to SCIM:
 
 ---
 
-## Part 3 -- Permission Set to Group Mapping (Terraform)
+## Part 3 -- Group Mapping (AWS-managed groups + synced users)
 
-Permission sets and group-to-account assignments are managed by the deployable
-`infra/sso/` Terraform root (which wraps `modules/sso`). The six permission sets
-(AdministratorAccess, PowerUserAccess, ReadOnly, Billing, Developer, RegionalAdmin)
-already exist and are imported into Terraform state.
+**Constraint:** In this tenant, Entra ID provisions only **users** to AWS (not groups).
+SCIM pushes the `@guddge.com` users into the Identity Store, but the `aws-*` groups
+never sync. We therefore create the `aws-*` groups **directly in the AWS Identity Store**
+(via Terraform) and add the synced users to them. SSO login still flows through Entra;
+only group membership is owned in AWS.
 
-### Group -> permission set convention
+The six permission sets (AdministratorAccess, PowerUserAccess, ReadOnly, Billing,
+Developer, RegionalAdmin) already exist and are imported into Terraform state.
 
-| Entra group (SCIM-synced) | AWS permission set   |
-|---------------------------|----------------------|
-| `aws-admins`              | AdministratorAccess  |
-| `aws-powerusers`          | PowerUserAccess      |
-| `aws-readonly`            | ReadOnly             |
-| `aws-billing`             | Billing              |
-| `aws-developers`          | Developer            |
+### Convention
 
-### Step 1 -- confirm the Entra groups have synced
+| AWS-managed group | AWS permission set   |
+|-------------------|----------------------|
+| `aws-admins`      | AdministratorAccess  |
+| `aws-powerusers`  | PowerUserAccess      |
+| `aws-readonly`    | ReadOnly             |
+| `aws-billing`     | Billing              |
+| `aws-developers`  | Developer            |
+
+### Step 1 -- list the synced users
 
 ```bash
-aws identitystore list-groups \
-  --region us-east-1 \
+aws identitystore list-users --region us-east-1 \
   --identity-store-id d-90663e376f \
-  --query "Groups[*].{GroupId:GroupId,DisplayName:DisplayName}" --output table
+  --query "Users[*].UserName" --output table
 ```
 
-Until SCIM provisioning (Part 2) completes, the `aws-*` groups will not appear here.
+### Step 2 -- define groups, members, and assignments
 
-### Step 2 -- generate the assignments block
+Edit `infra/sso/terraform.tfvars` (copy from the example):
 
-A helper script looks up the synced group IDs and emits ready-to-paste HCL:
+```hcl
+managed_groups = {
+  "aws-admins"     = ["sreevatsav@guddge.com"]
+  "aws-developers" = ["bhanua@guddge.com"]
+}
 
-```bash
-# pass one or more target account IDs
-bash scripts/sso_generate_assignments.sh 286684483345 > assignments.hcl
+managed_group_assignments = [
+  { group_name = "aws-admins",     account_id = "286684483345", permission_set = "AdministratorAccess" },
+  { group_name = "aws-developers", account_id = "286684483345", permission_set = "Developer" },
+]
 ```
 
-It warns about any `aws-*` group that has not synced yet, so you can tell whether
-the blocker is on the Entra/SCIM side.
+Terraform creates each group, looks up the named users by `UserName`, adds them as
+members, and assigns the group to the permission set.
 
 ### Step 3 -- apply
-
-Copy `infra/sso/terraform.tfvars.example` to `infra/sso/terraform.tfvars`, paste the
-generated `account_assignments` block, then apply from the management account:
 
 ```bash
 cd infra/sso
 terraform init
-terraform plan    # review: assignments are "to add", nothing destroyed
+terraform plan    # groups/memberships/assignments are "to add", nothing destroyed
 terraform apply
 ```
 
-### Step 4 -- validate
+### Step 4 -- validate and test login
 
 ```bash
-bash tests/smoke_prod.sh    # confirms all six permission sets exist
+bash tests/smoke_prod.sh          # confirms permission sets
 ```
+Then have a member log in via the AWS access portal and confirm they land in the
+expected account with the expected permission set.
 
-> **Fixed:** The `AdministratorAccess` permission set was originally created in the console
-> with NO managed policy (only an inline Amazon Q/Bedrock trial policy), which caused
-> "Access denied" errors in the AWS console despite the name. The real
-> `arn:aws:iam::aws:policy/AdministratorAccess` managed policy is now attached via Terraform
-> (`modules/sso/variables.tf`). Re-login is required for the change to take effect.
->
+> When a new user later syncs from Entra, add their username to the relevant
+> `managed_groups` list and re-apply -- a one-line change.
+
 > NOTE: An "Amazon Q User" group is already assigned to AdministratorAccess in the
 > console (auto-created by Amazon Q). It is intentionally NOT managed by this Terraform
-> and will not be removed. Review whether that assignment should remain during the
-> direct-IAM-user cleanup.
+> and will not be removed. Review during the direct-IAM-user cleanup.
 ---
 
 ## Part 4 -- MFA and Conditional Access

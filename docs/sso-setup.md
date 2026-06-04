@@ -155,6 +155,12 @@ terraform apply
 bash tests/smoke_prod.sh    # confirms all six permission sets exist
 ```
 
+> **Fixed:** The `AdministratorAccess` permission set was originally created in the console
+> with NO managed policy (only an inline Amazon Q/Bedrock trial policy), which caused
+> "Access denied" errors in the AWS console despite the name. The real
+> `arn:aws:iam::aws:policy/AdministratorAccess` managed policy is now attached via Terraform
+> (`modules/sso/variables.tf`). Re-login is required for the change to take effect.
+>
 > NOTE: An "Amazon Q User" group is already assigned to AdministratorAccess in the
 > console (auto-created by Amazon Q). It is intentionally NOT managed by this Terraform
 > and will not be removed. Review whether that assignment should remain during the

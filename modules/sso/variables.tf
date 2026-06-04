@@ -14,7 +14,7 @@ variable "permission_sets" {
     AdministratorAccess = {
       description         = "Full administrative access"
       session_duration    = "PT2H"
-      managed_policy_arns = []
+      managed_policy_arns = ["arn:aws:iam::aws:policy/AdministratorAccess"]
       inline_policy       = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AmazonQDeveloperFreeTrialAccess\",\"Effect\":\"Allow\",\"Action\":[\"q:*\",\"bedrock:*\"],\"Resource\":\"*\"}]}"
     }
     PowerUserAccess = {

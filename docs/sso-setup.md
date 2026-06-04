@@ -1,4 +1,4 @@
-﻿# Entra ID SSO + SCIM Configuration Guide
+# Entra ID SSO + SCIM Configuration Guide
 
 ## Overview
 
@@ -97,34 +97,68 @@ Ensure the following Entra ID attributes map to SCIM:
 
 ---
 
-## Part 3 -- Permission Set to Group Mapping
+## Part 3 -- Permission Set to Group Mapping (Terraform)
 
-After SCIM sync, note the Identity Store Group IDs and update envs/prod/terraform.tfvars:
+Permission sets and group-to-account assignments are managed by the deployable
+`infra/sso/` Terraform root (which wraps `modules/sso`). The six permission sets
+(AdministratorAccess, PowerUserAccess, ReadOnly, Billing, Developer, RegionalAdmin)
+already exist and are imported into Terraform state.
 
-```hcl
-sso_account_assignments = [
-  {
-    group_id       = "IDENTITY_STORE_GROUP_ID_FOR_aws-admins"
-    account_id     = "PROD_ACCOUNT_ID"
-    permission_set = "Admin"
-  },
-  {
-    group_id       = "IDENTITY_STORE_GROUP_ID_FOR_aws-developers"
-    account_id     = "PROD_ACCOUNT_ID"
-    permission_set = "Developer"
-  },
-  # Add more mappings as needed
-]
-```
+### Group -> permission set convention
 
-Get Identity Store Group IDs:
+| Entra group (SCIM-synced) | AWS permission set   |
+|---------------------------|----------------------|
+| `aws-admins`              | AdministratorAccess  |
+| `aws-powerusers`          | PowerUserAccess      |
+| `aws-readonly`            | ReadOnly             |
+| `aws-billing`             | Billing              |
+| `aws-developers`          | Developer            |
+
+### Step 1 -- confirm the Entra groups have synced
+
 ```bash
 aws identitystore list-groups \
-  --identity-store-id d-XXXXXXXXXX \
-  --query "Groups[*].{GroupId:GroupId,DisplayName:DisplayName}" \
-  --output table
+  --region us-east-1 \
+  --identity-store-id d-90663e376f \
+  --query "Groups[*].{GroupId:GroupId,DisplayName:DisplayName}" --output table
 ```
 
+Until SCIM provisioning (Part 2) completes, the `aws-*` groups will not appear here.
+
+### Step 2 -- generate the assignments block
+
+A helper script looks up the synced group IDs and emits ready-to-paste HCL:
+
+```bash
+# pass one or more target account IDs
+bash scripts/sso_generate_assignments.sh 286684483345 > assignments.hcl
+```
+
+It warns about any `aws-*` group that has not synced yet, so you can tell whether
+the blocker is on the Entra/SCIM side.
+
+### Step 3 -- apply
+
+Copy `infra/sso/terraform.tfvars.example` to `infra/sso/terraform.tfvars`, paste the
+generated `account_assignments` block, then apply from the management account:
+
+```bash
+cd infra/sso
+terraform init
+terraform plan    # review: assignments are "to add", nothing destroyed
+terraform apply
+```
+
+### Step 4 -- validate
+
+```bash
+bash tests/smoke_prod.sh    # confirms all six permission sets exist
+```
+
+> NOTE: An "Amazon Q User" group is already assigned to AdministratorAccess in the
+> console (auto-created by Amazon Q). It is intentionally NOT managed by this Terraform
+> and will not be removed. Review whether that assignment should remain during the
+> direct-IAM-user cleanup.
 ---
 
 ## Part 4 -- MFA and Conditional Access

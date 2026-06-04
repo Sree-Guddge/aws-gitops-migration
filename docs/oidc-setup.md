@@ -1,4 +1,4 @@
-﻿# GitHub OIDC Role Setup Guide
+# GitHub OIDC Role Setup Guide
 
 ## Overview
 
@@ -105,8 +105,8 @@ module "iam" {
   }
 
   state_bucket_arn     = "arn:aws:s3:::ORGNAME-terraform-state-ACCOUNT_ID"
-  state_lock_table_arn = "arn:aws:dynamodb:eu-west-2:ACCOUNT_ID:table/terraform-state-lock"
-  state_kms_key_arn    = "arn:aws:kms:eu-west-2:ACCOUNT_ID:key/KEY_ID"
+  state_lock_table_arn = "arn:aws:dynamodb:us-west-2:ACCOUNT_ID:table/terraform-state-lock"
+  state_kms_key_arn    = "arn:aws:kms:us-west-2:ACCOUNT_ID:key/KEY_ID"
 }
 ```
 
@@ -121,7 +121,7 @@ After deploying the OIDC provider and roles, verify with a test workflow:
   uses: aws-actions/configure-aws-credentials@v4
   with:
     role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_DEV }}
-    aws-region: eu-west-2
+    aws-region: us-west-2
 
 - name: Verify identity
   run: aws sts get-caller-identity

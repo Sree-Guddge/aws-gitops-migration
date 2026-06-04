@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # tests/smoke_prod.sh
 # Production smoke tests -- stricter checks including lifecycle protection and budgets.
 # Verifies VPC, state backend, security services, deploy role, region compliance,
@@ -214,6 +214,37 @@ else
   fail "No AWS Budgets alerts found -- at least one budget should be configured for prod"
 fi
 
+# --------------------------------------------------------------------------------
+# 11. IAM Identity Center (Entra ID SSO) permission sets exist
+# --------------------------------------------------------------------------------
+# Requires the SSO instance to be enabled and infra/sso applied. Skips gracefully
+# if IAM Identity Center is not enabled in this account.
+SSO_INSTANCE_ARN=$(aws sso-admin list-instances \
+  --query "Instances[0].InstanceArn" --output text 2>/dev/null || echo "None")
+
+if [ "${SSO_INSTANCE_ARN}" = "None" ] || [ -z "${SSO_INSTANCE_ARN}" ]; then
+  fail "IAM Identity Center is not enabled -- Entra ID SSO (initiative 2) cannot be validated"
+else
+  pass "IAM Identity Center instance found (${SSO_INSTANCE_ARN})"
+
+  PS_NAMES=$(aws sso-admin list-permission-sets --instance-arn "${SSO_INSTANCE_ARN}" \
+    --query "PermissionSets" --output text 2>/dev/null || echo "")
+
+  RESOLVED=""
+  for ARN in ${PS_NAMES}; do
+    NAME=$(aws sso-admin describe-permission-set --instance-arn "${SSO_INSTANCE_ARN}" \
+      --permission-set-arn "${ARN}" --query "PermissionSet.Name" --output text 2>/dev/null || echo "")
+    RESOLVED="${RESOLVED} ${NAME}"
+  done
+
+  for EXPECTED in AdministratorAccess PowerUserAccess ReadOnly Billing Developer RegionalAdmin; do
+    if echo "${RESOLVED}" | grep -qw "${EXPECTED}"; then
+      pass "Permission set '${EXPECTED}' exists"
+    else
+      fail "Permission set '${EXPECTED}' missing -- run terraform apply in infra/sso"
+    fi
+  done
+fi
 # --------------------------------------------------------------------------
 # Summary
 # --------------------------------------------------------------------------

@@ -1,24 +1,45 @@
 # infra/sso/terraform.tfvars.example
-# Copy to terraform.tfvars and fill in real values after SCIM sync.
+# Copy to terraform.tfvars and fill in real values after Entra SCIM sync.
 #
-# Get Identity Store group IDs with:
-#   aws identitystore list-groups --identity-store-id <d-XXXXXXXXXX> \
+# IAM Identity Center facts for this account (286684483345):
+#   SSO instance ARN  : arn:aws:sso:::instance/ssoins-7223ba457995e15d
+#   Identity Store ID : d-90663e376f
+#   SSO home region   : us-east-1  (independent of the us-west-2 workload region)
+#
+# Entra group -> permission set convention (see scripts/sso_generate_assignments.sh):
+#   aws-admins      -> AdministratorAccess
+#   aws-powerusers  -> PowerUserAccess
+#   aws-readonly    -> ReadOnly
+#   aws-billing     -> Billing
+#   aws-developers  -> Developer
+#
+# Generate the block below automatically once SCIM has synced the aws-* groups:
+#   bash scripts/sso_generate_assignments.sh 286684483345 > assignments.hcl
+#   # then paste its output here
+#
+# Look up group IDs manually:
+#   aws identitystore list-groups --region us-east-1 \
+#     --identity-store-id d-90663e376f \
 #     --query "Groups[*].{GroupId:GroupId,DisplayName:DisplayName}" --output table
+#
+# NOTE: An "Amazon Q User" group is already assigned to AdministratorAccess in the
+# console (auto-created by Amazon Q, NOT managed here). This Terraform only manages
+# assignments listed below; it will not remove that out-of-band assignment.
 
 # account_assignments = [
 #   {
 #     group_id       = "GROUP_ID_FOR_aws-admins"      # from SCIM-synced Entra group
-#     account_id     = "111111111111"                 # target AWS account
+#     account_id     = "286684483345"                 # target AWS account
 #     permission_set = "AdministratorAccess"
 #   },
 #   {
 #     group_id       = "GROUP_ID_FOR_aws-developers"
-#     account_id     = "111111111111"
+#     account_id     = "286684483345"
 #     permission_set = "Developer"
 #   },
 #   {
 #     group_id       = "GROUP_ID_FOR_aws-readonly"
-#     account_id     = "222222222222"
+#     account_id     = "286684483345"
 #     permission_set = "ReadOnly"
 #   },
 # ]

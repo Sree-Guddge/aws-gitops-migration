@@ -1,4 +1,4 @@
-﻿# ci/pr-plan.yml
+# ci/pr-plan.yml
 # Runs on every PR targeting main.
 # Performs: fmt check, validate, security scan, secret scan, plan (with artifact upload),
 # destructive-change detection, and PR comment summary.
@@ -21,7 +21,7 @@ permissions:
 
 env:
   TF_VERSION: "1.8.5"
-  AWS_REGION: "us-west-2"
+  AWS_REGION: ${{ vars.AWS_REGION }}
 
 jobs:
   # -----------------------------------------------------------
@@ -163,13 +163,16 @@ jobs:
           terraform init \
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
             -backend-config="kms_key_id=${{ secrets.TF_STATE_KMS_KEY_ARN }}" \
-            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}"
+            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}" \
+            -backend-config="region=${{ env.AWS_REGION }}"
         working-directory: envs/${{ matrix.env }}
 
       - name: Terraform Plan
         id: plan
         run: |
           terraform plan \
+            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="log_bucket_name=${{ secrets.LOG_BUCKET_NAME }}" \
             -var-file=terraform.tfvars \
             -out=tfplan-${{ matrix.env }}.binary \
             -no-color 2>&1 | tee plan-output.txt

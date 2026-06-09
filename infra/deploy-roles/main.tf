@@ -9,15 +9,15 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-west-2"
+  region = var.aws_region
 }
 
 locals {
   oidc_arn         = "arn:aws:iam::286684483345:oidc-provider/token.actions.githubusercontent.com"
   repo             = "Sree-Guddge/aws-gitops-migration"
   state_bucket_arn = "arn:aws:s3:::sree-guddge-terraform-state-286684483345"
-  lock_table_arn   = "arn:aws:dynamodb:us-west-2:286684483345:table/terraform-state-lock"
-  kms_key_arn      = "arn:aws:kms:us-west-2:286684483345:key/8ad71d07-ef24-47d2-8c9d-b3d86e4fee6d"
+  lock_table_arn   = "arn:aws:dynamodb:${var.aws_region}:${var.account_id}:table/terraform-state-lock"
+  kms_key_arn      = var.kms_key_arn
 }
 
 resource "aws_iam_role" "dev" {

@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "Home region of the IAM Identity Center instance. NOTE: this is the SSO home region (us-east-1), which is independent of the us-west-2 workload region. IAM Identity Center cannot be relocated to match workloads."
+  description = "Home region of the IAM Identity Center instance. NOTE: this is the SSO home region (us-east-1), which may differ from the workload region. IAM Identity Center cannot be relocated to match workloads."
   type        = string
   default     = "us-east-1"
 

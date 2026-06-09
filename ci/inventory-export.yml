@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 env:
-  AWS_REGION: "us-west-2"
+  AWS_REGION: ${{ vars.AWS_REGION }}
 
 jobs:
   export:

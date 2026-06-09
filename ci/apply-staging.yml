@@ -17,7 +17,7 @@ permissions:
 
 env:
   TF_VERSION: "1.8.5"
-  AWS_REGION: "us-west-2"
+  AWS_REGION: ${{ vars.AWS_REGION }}
   ENV: "staging"
 
 jobs:
@@ -45,12 +45,15 @@ jobs:
           terraform init \
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
             -backend-config="kms_key_id=${{ secrets.TF_STATE_KMS_KEY_ID }}" \
-            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}"
+            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}" \
+            -backend-config="region=${{ env.AWS_REGION }}"
         working-directory: envs/${{ env.ENV }}
 
       - name: Terraform Plan
         run: |
           terraform plan \
+            -var="aws_region=${{ env.AWS_REGION }}" \
+            -var="log_bucket_name=${{ secrets.LOG_BUCKET_NAME }}" \
             -var-file=terraform.tfvars \
             -out=tfplan.binary \
             -no-color 2>&1 | tee plan-output.txt
@@ -97,7 +100,8 @@ jobs:
           terraform init \
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
             -backend-config="kms_key_id=${{ secrets.TF_STATE_KMS_KEY_ID }}" \
-            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}"
+            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}" \
+            -backend-config="region=${{ env.AWS_REGION }}"
         working-directory: envs/${{ env.ENV }}
 
       - name: Terraform Apply

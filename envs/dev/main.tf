@@ -17,7 +17,7 @@ terraform {
     #     -backend-config="bucket=<STATE_BUCKET_NAME>" \
     #     -backend-config="kms_key_id=<KMS_KEY_ARN>"
     key            = "dev/terraform.tfstate"
-    region         = "us-west-2"
+    # region injected via -backend-config flag
     encrypt        = true
     dynamodb_table = "terraform-state-lock"
   }
@@ -69,7 +69,7 @@ module "s3" {
 
   bucket_name     = "${var.org_name}-app-${local.env}-${var.account_id}"
   kms_key_arn     = module.kms.key_arn
-  log_bucket_name = ""
+  log_bucket_name = var.log_bucket_name
   tags            = {}
 }
 

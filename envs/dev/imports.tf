@@ -3,7 +3,7 @@
 #
 # USAGE:
 #   1. Run the audit script to discover actual resource IDs:
-#        bash scripts/inventory_export.sh --region us-west-2
+#        bash scripts/inventory_export.sh --region $AWS_REGION
 #        bash scripts/generate_audit_report.sh
 #   2. Replace every placeholder ID (e.g. "vpc-XXXXXXXXXX") with the real ID
 #      found in docs/audit-report.md or the AWS CLI commands shown in each comment.
@@ -23,7 +23,7 @@
 import {
   to = module.vpc.aws_vpc.this
   id = "vpc-XXXXXXXXXX" # Replace with actual VPC ID from:
-  # aws ec2 describe-vpcs --region us-west-2 --filters "Name=tag:Environment,Values=dev" \
+  # aws ec2 describe-vpcs --region $AWS_REGION --filters "Name=tag:Environment,Values=dev" \
   #   --query 'Vpcs[*].VpcId' --output text
 }
 
@@ -34,7 +34,7 @@ import {
 import {
   to = module.vpc.aws_internet_gateway.this
   id = "igw-XXXXXXXXXX" # Replace with actual IGW ID from:
-  # aws ec2 describe-internet-gateways --region us-west-2 \
+  # aws ec2 describe-internet-gateways --region $AWS_REGION \
   #   --filters "Name=attachment.vpc-id,Values=<VPC_ID>" \
   #   --query 'InternetGateways[*].InternetGatewayId' --output text
 }
@@ -46,7 +46,7 @@ import {
 import {
   to = module.vpc.aws_subnet.public[0]
   id = "subnet-XXXXXXXXXX" # Replace with public subnet 0 ID from:
-  # aws ec2 describe-subnets --region us-west-2 \
+  # aws ec2 describe-subnets --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=tag:Tier,Values=public" \
   #   --query 'sort_by(Subnets, &AvailabilityZone)[0].SubnetId' --output text
 }
@@ -54,7 +54,7 @@ import {
 import {
   to = module.vpc.aws_subnet.public[1]
   id = "subnet-YYYYYYYYYY" # Replace with public subnet 1 ID from:
-  # aws ec2 describe-subnets --region us-west-2 \
+  # aws ec2 describe-subnets --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=tag:Tier,Values=public" \
   #   --query 'sort_by(Subnets, &AvailabilityZone)[1].SubnetId' --output text
 }
@@ -62,7 +62,7 @@ import {
 import {
   to = module.vpc.aws_subnet.public[2]
   id = "subnet-ZZZZZZZZZZ" # Replace with public subnet 2 ID from:
-  # aws ec2 describe-subnets --region us-west-2 \
+  # aws ec2 describe-subnets --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=tag:Tier,Values=public" \
   #   --query 'sort_by(Subnets, &AvailabilityZone)[2].SubnetId' --output text
 }
@@ -74,7 +74,7 @@ import {
 import {
   to = module.vpc.aws_subnet.private[0]
   id = "subnet-AAAAAAAAAA" # Replace with private subnet 0 ID from:
-  # aws ec2 describe-subnets --region us-west-2 \
+  # aws ec2 describe-subnets --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=tag:Tier,Values=private" \
   #   --query 'sort_by(Subnets, &AvailabilityZone)[0].SubnetId' --output text
 }
@@ -82,7 +82,7 @@ import {
 import {
   to = module.vpc.aws_subnet.private[1]
   id = "subnet-BBBBBBBBBB" # Replace with private subnet 1 ID from:
-  # aws ec2 describe-subnets --region us-west-2 \
+  # aws ec2 describe-subnets --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=tag:Tier,Values=private" \
   #   --query 'sort_by(Subnets, &AvailabilityZone)[1].SubnetId' --output text
 }
@@ -90,7 +90,7 @@ import {
 import {
   to = module.vpc.aws_subnet.private[2]
   id = "subnet-CCCCCCCCCC" # Replace with private subnet 2 ID from:
-  # aws ec2 describe-subnets --region us-west-2 \
+  # aws ec2 describe-subnets --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=tag:Tier,Values=private" \
   #   --query 'sort_by(Subnets, &AvailabilityZone)[2].SubnetId' --output text
 }
@@ -102,7 +102,7 @@ import {
 import {
   to = module.vpc.aws_eip.nat[0]
   id = "eipalloc-XXXXXXXXXX" # Replace with EIP allocation ID for NAT GW 0 from:
-  # aws ec2 describe-addresses --region us-west-2 \
+  # aws ec2 describe-addresses --region $AWS_REGION \
   #   --filters "Name=tag:Name,Values=*nat-eip-0*" \
   #   --query 'Addresses[*].AllocationId' --output text
 }
@@ -110,7 +110,7 @@ import {
 import {
   to = module.vpc.aws_eip.nat[1]
   id = "eipalloc-YYYYYYYYYY" # Replace with EIP allocation ID for NAT GW 1 from:
-  # aws ec2 describe-addresses --region us-west-2 \
+  # aws ec2 describe-addresses --region $AWS_REGION \
   #   --filters "Name=tag:Name,Values=*nat-eip-1*" \
   #   --query 'Addresses[*].AllocationId' --output text
 }
@@ -118,7 +118,7 @@ import {
 import {
   to = module.vpc.aws_eip.nat[2]
   id = "eipalloc-ZZZZZZZZZZ" # Replace with EIP allocation ID for NAT GW 2 from:
-  # aws ec2 describe-addresses --region us-west-2 \
+  # aws ec2 describe-addresses --region $AWS_REGION \
   #   --filters "Name=tag:Name,Values=*nat-eip-2*" \
   #   --query 'Addresses[*].AllocationId' --output text
 }
@@ -130,7 +130,7 @@ import {
 import {
   to = module.vpc.aws_nat_gateway.this[0]
   id = "nat-XXXXXXXXXXXXXXXXX" # Replace with NAT Gateway 0 ID from:
-  # aws ec2 describe-nat-gateways --region us-west-2 \
+  # aws ec2 describe-nat-gateways --region $AWS_REGION \
   #   --filter "Name=vpc-id,Values=<VPC_ID>" "Name=state,Values=available" \
   #   --query 'sort_by(NatGateways, &SubnetId)[0].NatGatewayId' --output text
 }
@@ -138,7 +138,7 @@ import {
 import {
   to = module.vpc.aws_nat_gateway.this[1]
   id = "nat-YYYYYYYYYYYYYYYYY" # Replace with NAT Gateway 1 ID from:
-  # aws ec2 describe-nat-gateways --region us-west-2 \
+  # aws ec2 describe-nat-gateways --region $AWS_REGION \
   #   --filter "Name=vpc-id,Values=<VPC_ID>" "Name=state,Values=available" \
   #   --query 'sort_by(NatGateways, &SubnetId)[1].NatGatewayId' --output text
 }
@@ -146,7 +146,7 @@ import {
 import {
   to = module.vpc.aws_nat_gateway.this[2]
   id = "nat-ZZZZZZZZZZZZZZZZZ" # Replace with NAT Gateway 2 ID from:
-  # aws ec2 describe-nat-gateways --region us-west-2 \
+  # aws ec2 describe-nat-gateways --region $AWS_REGION \
   #   --filter "Name=vpc-id,Values=<VPC_ID>" "Name=state,Values=available" \
   #   --query 'sort_by(NatGateways, &SubnetId)[2].NatGatewayId' --output text
 }
@@ -158,7 +158,7 @@ import {
 import {
   to = module.vpc.aws_route_table.public
   id = "rtb-XXXXXXXXXX" # Replace with public route table ID from:
-  # aws ec2 describe-route-tables --region us-west-2 \
+  # aws ec2 describe-route-tables --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=tag:Name,Values=*rt-public*" \
   #   --query 'RouteTables[*].RouteTableId' --output text
 }
@@ -166,7 +166,7 @@ import {
 import {
   to = module.vpc.aws_route_table.private[0]
   id = "rtb-AAAAAAAAAA" # Replace with private route table 0 ID from:
-  # aws ec2 describe-route-tables --region us-west-2 \
+  # aws ec2 describe-route-tables --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=tag:Name,Values=*rt-private-0*" \
   #   --query 'RouteTables[*].RouteTableId' --output text
 }
@@ -174,7 +174,7 @@ import {
 import {
   to = module.vpc.aws_route_table.private[1]
   id = "rtb-BBBBBBBBBB" # Replace with private route table 1 ID from:
-  # aws ec2 describe-route-tables --region us-west-2 \
+  # aws ec2 describe-route-tables --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=tag:Name,Values=*rt-private-1*" \
   #   --query 'RouteTables[*].RouteTableId' --output text
 }
@@ -182,7 +182,7 @@ import {
 import {
   to = module.vpc.aws_route_table.private[2]
   id = "rtb-CCCCCCCCCC" # Replace with private route table 2 ID from:
-  # aws ec2 describe-route-tables --region us-west-2 \
+  # aws ec2 describe-route-tables --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=tag:Name,Values=*rt-private-2*" \
   #   --query 'RouteTables[*].RouteTableId' --output text
 }
@@ -194,7 +194,7 @@ import {
 import {
   to = module.vpc.aws_route_table_association.public[0]
   id = "subnet-XXXXXXXXXX/rtb-XXXXXXXXXX" # Replace with: <public_subnet_0_id>/<public_rtb_id>
-  # aws ec2 describe-route-tables --region us-west-2 \
+  # aws ec2 describe-route-tables --region $AWS_REGION \
   #   --filters "Name=route-table-id,Values=<PUBLIC_RTB_ID>" \
   #   --query 'RouteTables[0].Associations[?SubnetId!=`null`].{SubnetId:SubnetId,AssociationId:RouteTableAssociationId}' --output json
 }
@@ -231,7 +231,7 @@ import {
 import {
   to = module.vpc.aws_default_security_group.default
   id = "sg-XXXXXXXXXX" # Replace with the default security group ID for the VPC from:
-  # aws ec2 describe-security-groups --region us-west-2 \
+  # aws ec2 describe-security-groups --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=group-name,Values=default" \
   #   --query 'SecurityGroups[*].GroupId' --output text
 }
@@ -243,7 +243,7 @@ import {
 import {
   to = module.vpc.aws_default_network_acl.default
   id = "acl-XXXXXXXXXX" # Replace with the default NACL ID for the VPC from:
-  # aws ec2 describe-network-acls --region us-west-2 \
+  # aws ec2 describe-network-acls --region $AWS_REGION \
   #   --filters "Name=vpc-id,Values=<VPC_ID>" "Name=default,Values=true" \
   #   --query 'NetworkAcls[*].NetworkAclId' --output text
 }
@@ -256,7 +256,7 @@ import {
 # import {
 #   to = module.vpc.aws_flow_log.this[0]
 #   id = "fl-XXXXXXXXXX" # Replace with actual flow log ID from:
-#   # aws ec2 describe-flow-logs --region us-west-2 \
+#   # aws ec2 describe-flow-logs --region $AWS_REGION \
 #   #   --filter "Name=resource-id,Values=<VPC_ID>" \
 #   #   --query 'FlowLogs[*].FlowLogId' --output text
 # }
@@ -271,14 +271,14 @@ import {
 import {
   to = module.kms.aws_kms_key.this_unprotected[0]
   id = "mrk-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" # Replace with actual KMS Key ID (not ARN) from:
-  # aws kms list-aliases --region us-west-2 \
+  # aws kms list-aliases --region $AWS_REGION \
   #   --query 'Aliases[?AliasName==`alias/dev-terraform-state`].TargetKeyId' --output text
 }
 
 import {
   to = module.kms.aws_kms_alias.this
   id = "alias/dev-terraform-state" # Replace with actual alias name if different from:
-  # aws kms list-aliases --region us-west-2 \
+  # aws kms list-aliases --region $AWS_REGION \
   #   --query 'Aliases[?contains(AliasName, `dev`)].AliasName' --output text
 }
 
@@ -289,8 +289,8 @@ import {
 import {
   to = module.cloudtrail.aws_cloudtrail.this
   id = "dev-trail" # Replace with actual trail name from:
-  # aws cloudtrail describe-trails --region us-west-2 \
-  #   --query 'trailList[?HomeRegion==`us-west-2`].Name' --output text
+  # aws cloudtrail describe-trails --region $AWS_REGION \
+  #   --query 'trailList[?HomeRegion==`\`].Name' --output text
 }
 
 # CloudTrail log bucket (uses count based on var.prevent_destroy; dev defaults to false
@@ -298,8 +298,8 @@ import {
 import {
   to = module.cloudtrail.aws_s3_bucket.trail_unprotected[0]
   id = "REPLACE-WITH-CLOUDTRAIL-BUCKET-NAME" # Replace with actual bucket name from:
-  # aws cloudtrail describe-trails --region us-west-2 \
-  #   --query 'trailList[?HomeRegion==`us-west-2`].S3BucketName' --output text
+  # aws cloudtrail describe-trails --region $AWS_REGION \
+  #   --query 'trailList[?HomeRegion==`\`].S3BucketName' --output text
 }
 
 # ---------------------------------------------------------------------------
@@ -309,7 +309,7 @@ import {
 import {
   to = module.guardduty.aws_guardduty_detector.this
   id = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" # Replace with actual detector ID (32-char hex) from:
-  # aws guardduty list-detectors --region us-west-2 \
+  # aws guardduty list-detectors --region $AWS_REGION \
   #   --query 'DetectorIds[0]' --output text
 }
 
@@ -317,7 +317,7 @@ import {
 import {
   to = module.guardduty.aws_s3_bucket.findings
   id = "REPLACE-WITH-GUARDDUTY-FINDINGS-BUCKET-NAME" # Replace with actual bucket name from:
-  # aws guardduty list-publishing-destinations --region us-west-2 --detector-id <DETECTOR_ID> \
+  # aws guardduty list-publishing-destinations --region $AWS_REGION --detector-id <DETECTOR_ID> \
   #   --query 'Destinations[?DestinationType==`S3`].DestinationProperties.DestinationArn' --output text
   # (extract bucket name from the ARN)
 }
@@ -382,7 +382,7 @@ import {
 # import {
 #   to = module.rds.aws_db_instance.this
 #   id = "REPLACE-WITH-RDS-INSTANCE-IDENTIFIER" # from:
-#   # aws rds describe-db-instances --region us-west-2 \
+#   # aws rds describe-db-instances --region $AWS_REGION \
 #   #   --query 'DBInstances[?TagList[?Key==`Environment`&&Value==`dev`]].DBInstanceIdentifier' \
 #   #   --output text
 # }
@@ -396,7 +396,7 @@ import {
 # import {
 #   to = module.elasticache.aws_elasticache_cluster.this
 #   id = "REPLACE-WITH-CACHE-CLUSTER-ID" # from:
-#   # aws elasticache describe-cache-clusters --region us-west-2 \
+#   # aws elasticache describe-cache-clusters --region $AWS_REGION \
 #   #   --query 'CacheClusters[?contains(CacheClusterId, `dev`)].CacheClusterId' --output text
 # }
 
@@ -409,7 +409,7 @@ import {
 # import {
 #   to = module.efs.aws_efs_file_system.this
 #   id = "fs-XXXXXXXXXX" # from:
-#   # aws efs describe-file-systems --region us-west-2 \
+#   # aws efs describe-file-systems --region $AWS_REGION \
 #   #   --query 'FileSystems[?Tags[?Key==`Environment`&&Value==`dev`]].FileSystemId' --output text
 # }
 

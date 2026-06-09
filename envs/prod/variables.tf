@@ -1,11 +1,10 @@
 variable "aws_region" {
   description = "AWS region to deploy resources into"
   type        = string
-  default     = "us-west-2"
 
   validation {
     condition     = can(regex("^[a-z]{2}-[a-z]+-[0-9]$", var.aws_region))
-    error_message = "aws_region must be a valid AWS region identifier (e.g. us-west-2, eu-central-1)."
+    error_message = "aws_region must be a valid AWS region identifier (e.g. us-east-1, eu-central-1)."
   }
 }
 
@@ -58,4 +57,9 @@ variable "private_subnet_cidrs" {
 variable "kms_admin_arns" {
   description = "IAM principal ARNs that can manage KMS keys"
   type        = list(string)
+}
+
+variable "log_bucket_name" {
+  description = "Name of the S3 bucket to receive access logs (from bootstrap output: log_bucket_name)"
+  type        = string
 }

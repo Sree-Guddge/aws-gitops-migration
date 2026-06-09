@@ -141,10 +141,37 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
   bucket = aws_s3_bucket.logs.id
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.state.arn
+      sse_algorithm = "AES256"
     }
-    bucket_key_enabled = true
+  }
+}
+
+# S3 access log delivery requires a bucket policy granting the logging service principal
+resource "aws_s3_bucket_policy" "logs" {
+  bucket = aws_s3_bucket.logs.id
+  policy = data.aws_iam_policy_document.log_bucket_policy.json
+}
+
+data "aws_iam_policy_document" "log_bucket_policy" {
+  statement {
+    sid    = "S3AccessLogDelivery"
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["logging.s3.amazonaws.com"]
+    }
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.logs.arn}/*"]
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:s3:::*"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
   }
 }
 

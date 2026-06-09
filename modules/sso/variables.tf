@@ -14,7 +14,7 @@ variable "permission_sets" {
     AdministratorAccess = {
       description         = "Full administrative access"
       session_duration    = "PT2H"
-      managed_policy_arns = []
+      managed_policy_arns = ["arn:aws:iam::aws:policy/AdministratorAccess"]
       inline_policy       = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AmazonQDeveloperFreeTrialAccess\",\"Effect\":\"Allow\",\"Action\":[\"q:*\",\"bedrock:*\"],\"Resource\":\"*\"}]}"
     }
     PowerUserAccess = {
@@ -59,4 +59,20 @@ variable "account_assignments" {
 variable "tags" {
   type    = map(string)
   default = {}
+}
+
+variable "managed_groups" {
+  description = "Map of AWS-managed Identity Store group display name to a list of usernames (as synced from the external IdP, e.g. \"user@guddge.com\"). Used when the IdP can only provision users, not groups."
+  type        = map(list(string))
+  default     = {}
+}
+
+variable "managed_group_assignments" {
+  description = "List of assignments mapping an AWS-managed group (by display name, key of managed_groups) to an account + permission set."
+  type = list(object({
+    group_name     = string # key in managed_groups
+    account_id     = string
+    permission_set = string # key in permission_sets
+  }))
+  default = []
 }

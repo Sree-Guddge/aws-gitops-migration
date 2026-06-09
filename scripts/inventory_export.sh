@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # scripts/inventory_export.sh
 # Exports current AWS resource inventory to JSON files under scripts/inventory/<timestamp>/
 #
@@ -16,7 +16,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
-REGION="us-west-2"
+REGION="${AWS_REGION:-us-east-1}"
 DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do

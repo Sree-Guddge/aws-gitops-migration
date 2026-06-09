@@ -40,6 +40,10 @@ module "sso" {
 
   account_assignments = var.account_assignments
 
+  # AWS-managed groups + memberships (used because Entra can only sync USERS).
+  managed_groups            = var.managed_groups
+  managed_group_assignments = var.managed_group_assignments
+
   tags = {
     Component = "sso"
   }

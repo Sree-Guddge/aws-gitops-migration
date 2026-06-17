@@ -1,4 +1,4 @@
-# ci/apply-dev.yml
+# .github/workflows/apply-dev.yml
 # Triggered on merge to main for changes under envs/dev/ or modules/.
 # Applies automatically after smoke tests pass -- no manual approval required for dev.
 

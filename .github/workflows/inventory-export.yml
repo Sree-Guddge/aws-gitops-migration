@@ -1,4 +1,4 @@
-# ci/inventory-export.yml
+# .github/workflows/inventory-export.yml
 # Scheduled weekly inventory export of all AWS resources.
 # Output is committed to the repo under scripts/inventory/ for audit trail.
 

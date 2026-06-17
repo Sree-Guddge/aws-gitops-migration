@@ -1,4 +1,4 @@
-# ci/pr-plan.yml
+# .github/workflows/pr-plan.yml
 # Runs on every PR targeting main.
 # Performs: fmt check, validate, security scan, secret scan, plan (with artifact upload),
 # destructive-change detection, and PR comment summary.

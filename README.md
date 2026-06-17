@@ -47,11 +47,12 @@ Directory Layout:
 | `envs/dev/` | Dev environment overlay |
 | `envs/staging/` | Staging environment overlay |
 | `envs/prod/` | Production environment overlay |
-| `.github/workflows/pr-checks.yml` | GitHub Actions: fmt/validate/plan/security-scan on PR |
+| `.github/workflows/pr-plan.yml` | PR pipeline: fmt/validate/plan + tfsec + secret-scan + destructive-check + PR comment (OIDC) |
+| `.github/workflows/apply-dev.yml` | GitHub Actions: auto apply on merge (dev) |
+| `.github/workflows/apply-staging.yml` | GitHub Actions: auto apply on merge (staging) |
+| `.github/workflows/apply-prod.yml` | GitHub Actions: gated apply for prod (production environment approval) |
+| `.github/workflows/inventory-export.yml` | GitHub Actions: AWS resource inventory export |
 | `.github/CODEOWNERS` | Code ownership for branch protection enforcement |
-| `ci/apply-dev.yml` | GitHub Actions: auto apply on merge (dev) |
-| `ci/apply-staging.yml` | GitHub Actions: auto apply on merge (staging) |
-| `ci/apply-prod.yml` | GitHub Actions: gated apply for prod |
 | `scripts/bootstrap.md` | APPROVED manual console bootstrap steps |
 | `scripts/inventory_export.sh` | Export current AWS resources to JSON/CSV |
 | `scripts/state_migration.sh` | State import/move helper |
@@ -133,7 +134,7 @@ No credentials committed to source -- all secrets injected at runtime.
 
 ```bash
 grep -rE 'AKIA[A-Z0-9]{16}' .
-grep -r 'AWS_ACCESS_KEY_ID\|AWS_SECRET_ACCESS_KEY' ci/ --include='*.yml'
+grep -r 'AWS_ACCESS_KEY_ID\|AWS_SECRET_ACCESS_KEY' .github/workflows/ --include='*.yml'
 ```
 
 **Expected result:** zero matches for both commands.
@@ -161,7 +162,7 @@ grep -r 'us-west-2[abc]' --include='*.tf' . && echo "FAIL" || echo "PASS"
 
 echo "=== Property 3: No hardcoded AWS access keys ==="
 grep -rE 'AKIA[A-Z0-9]{16}' . && echo "FAIL" || echo "PASS"
-grep -r 'AWS_ACCESS_KEY_ID\|AWS_SECRET_ACCESS_KEY' ci/ --include='*.yml' && echo "FAIL" || echo "PASS"
+grep -r 'AWS_ACCESS_KEY_ID\|AWS_SECRET_ACCESS_KEY' .github/workflows/ --include='*.yml' && echo "FAIL" || echo "PASS"
 
 echo "=== Property 4: All workflows use OIDC ==="
 grep -r 'aws-actions/configure-aws-credentials' --include='*.yml' . | grep -v 'role-to-assume' && echo "FAIL" || echo "PASS"

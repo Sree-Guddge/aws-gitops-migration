@@ -16,7 +16,7 @@ terraform {
     #   terraform init \
     #     -backend-config="bucket=<STATE_BUCKET_NAME>" \
     #     -backend-config="kms_key_id=<KMS_KEY_ARN>"
-    key            = "staging/terraform.tfstate"
+    key = "staging/terraform.tfstate"
     # region injected via -backend-config flag
     encrypt        = true
     dynamodb_table = "terraform-state-lock"

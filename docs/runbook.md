@@ -28,7 +28,7 @@ If drift is detected (manual console changes):
 2. Update backend key, variables, and tags
 3. Create a new GitHub environment with appropriate reviewers
 4. Add AWS_DEPLOY_ROLE_NEW_ENV secret
-5. Create a new apply workflow in ci/apply-new-env.yml
+5. Create a new apply workflow in .github/workflows/apply-new-env.yml
 6. Test with a non-critical resource first
 
 ### Rotating OIDC Roles
@@ -43,7 +43,7 @@ If a deploy role is compromised:
 
 ### Updating Terraform Version
 
-1. Update TF_VERSION in all ci/*.yml workflows
+1. Update TF_VERSION in all .github/workflows/*.yml workflows
 2. Test locally: terraform init -upgrade && terraform plan
 3. Commit and push to a feature branch
 4. Verify CI passes before merging

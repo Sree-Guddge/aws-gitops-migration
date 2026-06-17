@@ -1,4 +1,4 @@
-# ci/apply-prod.yml
+# .github/workflows/apply-prod.yml
 # Triggered on merge to main for changes under envs/prod/ or modules/.
 # Requires explicit human approval via the "production" GitHub environment gate.
 

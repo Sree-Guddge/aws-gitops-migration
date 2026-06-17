@@ -24,6 +24,3 @@ modules/kms/ @security-team
 
 # GitHub Actions workflows - CI/CD pipeline changes require platform team review
 .github/workflows/ @platform-team
-
-# CI directory (legacy workflow location)
-ci/ @platform-team

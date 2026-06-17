@@ -1,4 +1,4 @@
-# ci/apply-staging.yml
+# .github/workflows/apply-staging.yml
 # Triggered on merge to main for changes under envs/staging/ or modules/.
 # Applies automatically after smoke tests pass -- no manual approval required for staging.
 

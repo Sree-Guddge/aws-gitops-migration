@@ -25,12 +25,25 @@
 
 #### Required Status Checks
 
-The following checks must pass before a PR can be merged:
+The following checks must pass before a PR can be merged. **The names below must match
+exactly the job names produced by `.github/workflows/pr-plan.yml`** — GitHub uses the job
+`name` as the status-check "context", and matrix jobs append the environment in parentheses.
 
-- `terraform-fmt` - Terraform formatting validation
-- `terraform-validate` - Terraform configuration syntax validation
-- `terraform-plan` - Terraform plan execution (no errors)
-- `security-scan` - tfsec/Checkov security scan (no HIGH/CRITICAL findings)
+- `Terraform Format Check` - Terraform formatting validation
+- `Terraform Validate (dev)` - dev config syntax validation
+- `Terraform Validate (staging)` - staging config syntax validation
+- `Terraform Validate (prod)` - prod config syntax validation
+- `Terraform Plan (dev)` - dev plan execution (no errors)
+- `Terraform Plan (staging)` - staging plan execution (no errors)
+- `Terraform Plan (prod)` - prod plan execution (no errors)
+- `Security Scan (tfsec)` - tfsec security scan (fails on HIGH/CRITICAL)
+- `Secret Scanning (TruffleHog)` - committed-secret detection
+- `Destructive Change Check (dev)` - blocks destroy/replace without the `override-destructive` label
+- `Destructive Change Check (staging)` - same gate for staging
+- `Destructive Change Check (prod)` - same gate for prod
+
+> The `Post PR Comment` job runs with `if: always()` and is informational only — do **not**
+> add it as a required check.
 
 ### Push Restrictions
 
@@ -78,7 +91,7 @@ In addition to branch protection, the `production` GitHub Environment provides a
 ```bash
 gh api repos/{owner}/{repo}/branches/main/protection \
   --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["terraform-fmt","terraform-validate","terraform-plan","security-scan"]}' \
+  --field required_status_checks='{"strict":true,"contexts":["Terraform Format Check","Terraform Validate (dev)","Terraform Validate (staging)","Terraform Validate (prod)","Terraform Plan (dev)","Terraform Plan (staging)","Terraform Plan (prod)","Security Scan (tfsec)","Secret Scanning (TruffleHog)","Destructive Change Check (dev)","Destructive Change Check (staging)","Destructive Change Check (prod)"]}' \
   --field enforce_admins=true \
   --field required_pull_request_reviews='{"dismiss_stale_reviews":true,"require_code_owner_reviews":true,"required_approving_review_count":1}' \
   --field restrictions=null \
